@@ -1,0 +1,27 @@
+search_term,campaign,ad_group,match_type,impressions,clicks,cost,conversions,conversion_value,ctr,cpc
+dentist manchester,BrightSmile - General Dentistry,Local Dental,EXACT,3200,220,540.0,28,4200.0,6.88,2.45
+private dentist manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,1850,142,384.0,18,2700.0,7.68,2.7
+dental check up manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,1200,88,220.0,12,1800.0,7.33,2.5
+teeth whitening manchester,BrightSmile - General Dentistry,Cosmetic,PHRASE,980,72,198.0,8,1600.0,7.35,2.75
+emergency dentist manchester,BrightSmile - Emergency Dentist,Emergency,EXACT,2400,178,480.0,22,3300.0,7.42,2.7
+emergency dental appointment,BrightSmile - Emergency Dentist,Emergency,PHRASE,1450,108,312.0,14,2100.0,7.45,2.89
+dentist near me manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,1100,82,215.0,9,1350.0,7.45,2.62
+dental hygienist manchester,BrightSmile - General Dentistry,Hygienist,PHRASE,720,54,138.0,7,1050.0,7.5,2.56
+brightsmile dental,BrightSmile - General Dentistry,Brand,EXACT,580,48,96.0,12,1800.0,8.28,2.0
+brightsmile manchester,BrightSmile - General Dentistry,Brand,PHRASE,320,28,56.0,7,1050.0,8.75,2.0
+dental hygienist salary uk,BrightSmile - General Dentistry,Hygienist,PHRASE,1450,72,144.0,0,0,4.97,2.0
+how to become a dentist,BrightSmile - General Dentistry,Local Dental,PHRASE,980,48,96.0,0,0,4.9,2.0
+how much does a filling cost,BrightSmile - General Dentistry,Local Dental,PHRASE,1200,62,124.0,0,0,5.17,2.0
+teeth whitening at home,BrightSmile - General Dentistry,Cosmetic,PHRASE,1650,88,176.0,0,0,5.33,2.0
+dental nurse training manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,580,28,56.0,0,0,4.83,2.0
+orthodontist manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,1800,108,216.0,0,0,6.0,2.0
+invisalign manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,1200,78,156.0,0,0,6.5,2.0
+dental implants manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,980,64,128.0,0,0,6.53,2.0
+cosmetic dentist veneers manchester,BrightSmile - General Dentistry,Cosmetic,PHRASE,720,48,96.0,0,0,6.67,2.0
+cheap dentist manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,980,54,108.0,0,0,5.51,2.0
+free dental check up,BrightSmile - General Dentistry,Local Dental,PHRASE,720,38,76.0,0,0,5.28,2.0
+nhs dentist manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,2400,142,284.0,0,0,5.92,2.0
+bupa dental manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,580,32,64.0,0,0,5.52,2.0
+mydentist manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,410,22,44.0,0,0,5.37,2.0
+dental crown manchester,BrightSmile - General Dentistry,Local Dental,PHRASE,320,22,48.0,1,250.0,6.88,2.18
+dentist altrincham,BrightSmile - General Dentistry,Local Dental,PHRASE,240,18,36.0,2,300.0,7.5,2.0

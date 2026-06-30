@@ -1,0 +1,40 @@
+{
+  "accountName": "BrightSmile Dental Practice",
+  "referenceDate": "2026-05-30",
+  "currency": "GBP",
+  "monthlyBudget": 800,
+  "aiMaxStatus": "off",
+  "aiMaxEnabledDate": "2026-02-15",
+  "aiMaxDisabledDate": "2026-04-10",
+  "preAiMaxCpa": 22,
+  "campaigns": [
+    {
+      "campaignId": "camp-bs-001",
+      "campaignName": "BrightSmile - General Dentistry",
+      "campaignType": "SEARCH",
+      "smartBiddingStrategy": "MAXIMIZE_CONVERSIONS",
+      "currentNegativeKeywords": [
+        {
+          "keyword": "free",
+          "matchType": "BROAD"
+        },
+        {
+          "keyword": "jobs",
+          "matchType": "BROAD"
+        },
+        {
+          "keyword": "course",
+          "matchType": "BROAD"
+        }
+      ]
+    },
+    {
+      "campaignId": "camp-bs-002",
+      "campaignName": "BrightSmile - Emergency Dentist",
+      "campaignType": "SEARCH",
+      "smartBiddingStrategy": "TARGET_CPA",
+      "targetCpa": 28,
+      "currentNegativeKeywords": []
+    }
+  ]
+}

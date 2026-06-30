@@ -1,0 +1,22 @@
+# Dependency Directories
+node_modules/
+
+# Environment Variables and Credentials
+.env
+
+# Local Cache and Output Audits
+.audit_cache.json
+AI Guardrails Output Audit.txt
+*audit_output.json
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Temporary Files
+~$*.docx
+*.log
+*.tmp
+
+# Legal and NDA Files (Sensitive)
+SearchSavior_NDA.pdf

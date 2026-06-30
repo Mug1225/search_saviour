@@ -1,0 +1,54 @@
+{
+  "accountName": "Roastery Co",
+  "referenceDate": "2026-05-30",
+  "currency": "GBP",
+  "monthlyBudget": 2500,
+  "aiMaxStatus": "never-enabled",
+  "aiMaxEnabledDate": null,
+  "aiMaxDisabledDate": null,
+  "preAiMaxCpa": null,
+  "campaigns": [
+    {
+      "campaignId": "camp-rc-001",
+      "campaignName": "Roastery - Brand",
+      "campaignType": "SEARCH",
+      "smartBiddingStrategy": "TARGET_ROAS",
+      "targetRoas": 4.0,
+      "currentNegativeKeywords": [
+        {
+          "keyword": "jobs",
+          "matchType": "BROAD"
+        },
+        {
+          "keyword": "wholesale",
+          "matchType": "BROAD"
+        },
+        {
+          "keyword": "machine",
+          "matchType": "BROAD"
+        }
+      ]
+    },
+    {
+      "campaignId": "camp-rc-002",
+      "campaignName": "Roastery - Subscription Service",
+      "campaignType": "SEARCH",
+      "smartBiddingStrategy": "TARGET_ROAS",
+      "targetRoas": 4.0,
+      "currentNegativeKeywords": [
+        {
+          "keyword": "jobs",
+          "matchType": "BROAD"
+        },
+        {
+          "keyword": "free",
+          "matchType": "PHRASE"
+        },
+        {
+          "keyword": "amazon",
+          "matchType": "BROAD"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+search_term,campaign,ad_group,match_type,impressions,clicks,cost,conversions,conversion_value,ctr,cpc
+projectflow pm,ProjectFlow - Brand,Brand Terms,EXACT,4200,380,950.0,42,12180.0,9.05,2.5
+projectflow project management,ProjectFlow - Brand,Brand Terms,PHRASE,1850,156,410.0,18,5220.0,8.43,2.63
+projectflow for agencies,ProjectFlow - Brand,Brand Terms,PHRASE,920,89,234.0,11,3190.0,9.67,2.63
+project management software for agencies,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,3800,234,1170.0,14,4060.0,6.16,5.0
+agency project management tool,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,2400,165,825.0,10,2900.0,6.88,5.0
+marketing agency project management,ProjectFlow - Generic - Agency PM,PM Tools,EXACT,1650,124,620.0,8,2320.0,7.52,5.0
+project management tool for marketing agency,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1180,87,435.0,6,1740.0,7.37,5.0
+agency time tracking software,ProjectFlow - Generic - Agency PM,Time Tracking,PHRASE,2200,142,710.0,9,2610.0,6.45,5.0
+client project tracking software,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1450,98,490.0,5,1450.0,6.76,5.0
+agency client billing software,ProjectFlow - Generic - Agency PM,Billing,PHRASE,980,64,320.0,4,1160.0,6.53,5.0
+ProjectFlow vs Asana,ProjectFlow - Competitor,Comparison,PHRASE,1200,88,264.0,5,1450.0,7.33,3.0
+ProjectFlow alternative,ProjectFlow - Competitor,Comparison,PHRASE,580,42,126.0,3,870.0,7.24,3.0
+asana pricing,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,3200,187,580.0,0,0,5.84,3.1
+asana review,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,2800,156,468.0,0,0,5.57,3.0
+monday.com pricing,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,2400,134,415.0,0,0,5.58,3.1
+monday vs asana,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1800,98,294.0,0,0,5.44,3.0
+clickup review,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1450,76,228.0,0,0,5.24,3.0
+notion project management,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1200,64,192.0,0,0,5.33,3.0
+trello pricing,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,980,52,156.0,0,0,5.31,3.0
+jira alternative for agencies,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,720,38,114.0,0,0,5.28,3.0
+basecamp vs trello,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,540,28,84.0,0,0,5.19,3.0
+wrike pricing,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,410,22,66.0,0,0,5.37,3.0
+project management certification,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,2800,142,426.0,0,0,5.07,3.0
+how to become a project manager,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1900,98,294.0,0,0,5.16,3.0
+project manager salary uk,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1650,84,252.0,0,0,5.09,3.0
+project management courses online,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1450,76,228.0,0,0,5.24,3.0
+what is agile project management,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1200,62,186.0,0,0,5.17,3.0
+project management interview questions,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,920,48,144.0,0,0,5.22,3.0
+pmp certification cost,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,780,41,123.0,0,0,5.26,3.0
+is project management a good career,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,580,32,96.0,0,0,5.52,3.0
+scrum master vs project manager,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,510,28,84.0,0,0,5.49,3.0
+construction project management software,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,2200,118,354.0,0,0,5.36,3.0
+project management software for nonprofits,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1450,78,234.0,0,0,5.38,3.0
+project management software for schools,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,980,54,162.0,0,0,5.51,3.0
+personal task management app,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1200,64,192.0,0,0,5.33,3.0
+family chore tracker app,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,720,38,114.0,0,0,5.28,3.0
+student task management,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,580,32,96.0,0,0,5.52,3.0
+construction scheduling software,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,510,28,84.0,0,0,5.49,3.0
+free project management software,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,4200,234,702.0,0,0,5.57,3.0
+cheapest project management tool,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,2400,128,384.0,0,0,5.33,3.0
+free agency management software,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1800,96,288.0,0,0,5.33,3.0
+free trello alternative,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,1200,64,192.0,0,0,5.33,3.0
+discount project management software,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,580,32,96.0,0,0,5.52,3.0
+free task management app,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,980,52,156.0,0,0,5.31,3.0
+kanban for agencies,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,380,24,72.0,1,290.0,6.32,3.0
+agency software 2026,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,240,16,48.0,0,0,6.67,3.0
+project tracker for designers,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,320,22,66.0,1,290.0,6.88,3.0
+retainer tracking software,ProjectFlow - Generic - Agency PM,PM Tools,PHRASE,180,12,36.0,0,0,6.67,3.0

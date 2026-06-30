@@ -1,0 +1,49 @@
+{
+  "accountName": "ProjectFlow PM",
+  "referenceDate": "2026-05-30",
+  "currency": "USD",
+  "monthlyBudget": 3000,
+  "aiMaxStatus": "off",
+  "aiMaxEnabledDate": "2026-03-01",
+  "aiMaxDisabledDate": "2026-05-01",
+  "preAiMaxCpa": 80,
+  "campaigns": [
+    {
+      "campaignId": "camp-pf-001",
+      "campaignName": "ProjectFlow - Brand",
+      "campaignType": "SEARCH",
+      "smartBiddingStrategy": "TARGET_CPA",
+      "targetCpa": 80,
+      "currentNegativeKeywords": [
+        {
+          "keyword": "free",
+          "matchType": "BROAD"
+        },
+        {
+          "keyword": "jobs",
+          "matchType": "BROAD"
+        }
+      ]
+    },
+    {
+      "campaignId": "camp-pf-002",
+      "campaignName": "ProjectFlow - Generic - Agency PM",
+      "campaignType": "SEARCH",
+      "smartBiddingStrategy": "TARGET_CPA",
+      "targetCpa": 80,
+      "currentNegativeKeywords": [
+        {
+          "keyword": "free",
+          "matchType": "BROAD"
+        }
+      ]
+    },
+    {
+      "campaignId": "camp-pf-003",
+      "campaignName": "ProjectFlow - Competitor",
+      "campaignType": "SEARCH",
+      "smartBiddingStrategy": "MAXIMIZE_CONVERSIONS",
+      "currentNegativeKeywords": []
+    }
+  ]
+}
