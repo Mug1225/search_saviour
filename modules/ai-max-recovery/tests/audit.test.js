@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const { parseSearchTerms, parseCampaignConfig, parseBusinessContext } = require('../src/parser');
-const { runStage1Diagnostics } = require('../src/diagnostics');
+const { runStage1Diagnostics, isNegativeKeywordMatch } = require('../src/diagnostics');
 const { runRecoveryAudit } = require('../src/index');
 
 const fixturesBase = path.join(__dirname, '..', 'Task Briefs', 'searchsavior_input_fixtures');
@@ -70,6 +70,29 @@ async function testSuite() {
     assert.equal(objectAuditResult.hangoverScore.category, 'severe', 'Object audit should yield severe score');
     assert.equal(objectAuditResult.auditMetadata.fixtureName, 'api-import', 'Metadata fixture name should default to api-import for object imports');
     console.log('  ✅ Object-based parameter signature validation successful.\n');
+
+    // ----------------------------------------------------
+    // TEST 5: Whole-Word Matching & Substring Collision Checks
+    // ----------------------------------------------------
+    console.log('▶ Test 5: Whole-word matching & letter-substring collision validations...');
+    
+    // BROAD Match Checks
+    assert.equal(isNegativeKeywordMatch('smart software plan', 'art', 'BROAD'), false, 'BROAD: negative "art" should not match "smart"');
+    assert.equal(isNegativeKeywordMatch('best project management software', 'project management', 'BROAD'), true, 'BROAD: "project management" should match query with "project" and "management"');
+    assert.equal(isNegativeKeywordMatch('scrum master training', 'scrum master', 'BROAD'), true, 'BROAD: should match all tokens');
+
+    // PHRASE Match Checks
+    assert.equal(isNegativeKeywordMatch('smart dental clinic', 'art', 'PHRASE'), false, 'PHRASE: negative "art" should not match "smart"');
+    assert.equal(isNegativeKeywordMatch('emergency dentist london', 'dentist london', 'PHRASE'), true, 'PHRASE: contiguous phrase in order should match');
+    assert.equal(isNegativeKeywordMatch('london dentist emergency', 'dentist london', 'PHRASE'), false, 'PHRASE: out of order should not match');
+    assert.equal(isNegativeKeywordMatch('emergency dentist, london', 'dentist london', 'PHRASE'), true, 'PHRASE: punctuation should be stripped/ignored');
+
+    // EXACT Match Checks
+    assert.equal(isNegativeKeywordMatch('emergency dentist', 'emergency dentist', 'EXACT'), true, 'EXACT: exact terms should match');
+    assert.equal(isNegativeKeywordMatch('emergency dentist london', 'emergency dentist', 'EXACT'), false, 'EXACT: extra words should not match');
+    assert.equal(isNegativeKeywordMatch('emergency dentist,', 'emergency dentist', 'EXACT'), true, 'EXACT: punctuation should be ignored');
+
+    console.log('  ✅ Whole-word matching validation successful.\n');
 
     console.log('🎉 ALL TESTS COMPLETED SUCCESSFULLY! MODULE IS CORRECT.');
   } catch (err) {
