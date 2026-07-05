@@ -11,9 +11,10 @@ To balance speed, operational cost, and intelligence, the audit engine is split 
 * **Stage 1 (Deterministic Heuristics - Local Node.js)**: Runs high-speed local processing. Obvious price-anchored (`free`, `cheap`, `coupon`) and informational/career terms (`job`, `resume`, `hiring`) are filtered and categorized locally. This eliminates redundant LLM calls and shields the LLM from misclassifying professional roles as brand-competitors.
 * **Stage 2 (Semantic AI Classification - Gemini 2.5 Flash)**: Complex semantic queries (like adjacent service expansion or competitor brand names) are routed to Gemini only if they pass Stage 1 safety checks.
 
-### 2. The Production "Fail-Fast" Rule
-* **The Rule**: In production, the system must **fail fast** and throw an error if the Gemini API key is missing or if the API request fails, rather than falling back to simulated mock recommendations. This protects the product's credibility.
-* **Test Isolation**: A mock fallback classifier is permitted **only** during automated unit testing (activated when `process.env.NODE_ENV === 'test'`) to ensure developer and CI workflows remain green without credentials.
+### 2. The Production "Fail-Fast" & Cache Bypass Rule
+* **The Rule**: In production, the system must **fail fast** and throw an error if the Gemini API key is missing or if the API request fails, rather than falling back to simulated mock recommendations.
+* **Cache Bypassing**: To eliminate cross-account data leakage and context staleness in multi-tenant environments, the local file cache (`.audit_cache.json`) is **completely bypassed** in production.
+* **Test Isolation**: A mock fallback classifier and the local file cache remain active **only** during automated unit testing (activated when `process.env.NODE_ENV === 'test'`) to ensure developer and CI workflows remain green and run offline.
 
 ---
 
@@ -29,9 +30,11 @@ To balance speed, operational cost, and intelligence, the audit engine is split 
 * **Zero CPA Baseline Protection**: CPA inflation percentage calculations are guarded with `preAiMaxCpa > 0` to prevent division-by-zero errors that yield `Infinity` or `NaN`.
 * **AJV Schema Capping**: Any computed score that resolves to a non-finite number is defaulted to `0`, rounded, and capped between `0` and `100`, preventing AJV schema validation errors.
 
-### 3. Punctuation & Pluralization Safety Checks
-* **Punctuation Stripping**: Non-alphanumeric punctuation (except spaces) is stripped from both candidate keywords and converting search terms before comparisons, preventing false negatives on terms like `"dentist, london"`.
+### 3. Punctuation, Pluralization & Whole-Word Matching Checks
+* **Whole-Word Matching**: Implemented `isNegativeKeywordMatch` to enforce standard Google Ads negative match logic. It splits queries and keywords into whole-word tokens (arrays) for `BROAD` checks, and checks contiguous subarray placement for `PHRASE` checks, preventing letter-substring collisions (e.g. negative keyword `"art"` no longer blocks `"smart"`).
+* **Punctuation Stripping**: Non-alphanumeric punctuation (except spaces) is stripped from both candidate keywords and converting search terms before comparison, preventing false negatives on terms like `"dentist, london"`.
 * **Pluralization Rules**: Added standard English spelling variation rules (`y` $\leftrightarrow$ `ies`, e.g. `vacancy` $\leftrightarrow$ `vacancies`) to catch and de-duplicate negative recommendation variants.
+* **Context-Agnostic Synonyms**: Stripped all campaign-specific or vertical-specific terms (e.g. `nhs`, `orthodontist`) from the static dictionary, keeping only generic business terms (like `free`, `cheap`, `salary`) to ensure correct multi-account compatibility.
 
 ### 4. Direct In-Memory JSON Signatures
 * **Flexible Entrypoint**: The orchestrator signature:
