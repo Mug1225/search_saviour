@@ -65,14 +65,15 @@ async function classifySearchTerms(fallbackCandidates, businessContext, campaign
     return [];
   }
 
-  const cache = loadCache();
+  const useCache = process.env.NODE_ENV === 'test';
+  const cache = useCache ? loadCache() : {};
   const cachedResults = [];
   const uncachedCandidates = [];
 
   // 1. Separate cached queries from uncached queries
   fallbackCandidates.forEach(candidate => {
     const termKey = candidate.search_term.toLowerCase().trim();
-    if (cache[termKey]) {
+    if (useCache && cache[termKey]) {
       // Re-map the cached recommendation to match the current campaign ID context
       const campaignId = getCampaignIdByName(candidate.campaign, campaigns);
       cachedResults.push({
@@ -207,30 +208,32 @@ Provide your response strictly in the requested JSON format.
   // 2. Populate the newly classified terms into the persistent local cache
   newRecommendations = postProcessRecommendations(newRecommendations);
 
-  newRecommendations.forEach(rec => {
-    // Strip campaign-specific targeting fields before saving to the global cache
-    const cacheEntry = {
-      keyword: rec.keyword,
-      matchType: rec.matchType,
-      reason: rec.reason,
-      estimatedMonthlyWaste: rec.estimatedMonthlyWaste,
-      sourceCategory: rec.sourceCategory,
-      confidence: rec.confidence
-    };
-    
-    // We cache based on the search query as the primary key
-    const candidateQuery = fallbackCandidates.find(t => {
-      const q = t.search_term.toLowerCase().trim();
-      return q.includes(rec.keyword) || rec.keyword.includes(q);
+  if (useCache) {
+    newRecommendations.forEach(rec => {
+      // Strip campaign-specific targeting fields before saving to the global cache
+      const cacheEntry = {
+        keyword: rec.keyword,
+        matchType: rec.matchType,
+        reason: rec.reason,
+        estimatedMonthlyWaste: rec.estimatedMonthlyWaste,
+        sourceCategory: rec.sourceCategory,
+        confidence: rec.confidence
+      };
+      
+      // We cache based on the search query as the primary key
+      const candidateQuery = fallbackCandidates.find(t => {
+        const q = t.search_term.toLowerCase().trim();
+        return q.includes(rec.keyword) || rec.keyword.includes(q);
+      });
+
+      if (candidateQuery) {
+        const termKey = candidateQuery.search_term.toLowerCase().trim();
+        cache[termKey] = cacheEntry;
+      }
     });
 
-    if (candidateQuery) {
-      const termKey = candidateQuery.search_term.toLowerCase().trim();
-      cache[termKey] = cacheEntry;
-    }
-  });
-
-  saveCache(cache);
+    saveCache(cache);
+  }
 
   // Return the merged array of previously cached and newly classified terms
   return [...cachedResults, ...newRecommendations];

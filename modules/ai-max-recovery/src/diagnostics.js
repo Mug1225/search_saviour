@@ -28,6 +28,34 @@ const INFO_WORDS = ['job', 'jobs', 'career', 'careers', 'hiring', 'salary', 'sal
 const COMPARATIVE_WORDS = ['vs', 'alternative', 'alternatives', 'review', 'reviews', 'competitor', 'comparison', 'pricing'];
 
 /**
+ * Evaluates whether a negative keyword blocks a search query based on exact whole-word matching.
+ * Implements standard Google Ads negative match logic.
+ */
+function isNegativeKeywordMatch(query, negKeyword, matchType) {
+  const cleanQuery = query.toLowerCase().replace(/[^\w\s]/g, ' ').trim();
+  const cleanNeg = negKeyword.toLowerCase().replace(/[^\w\s]/g, ' ').trim();
+  
+  const queryTokens = cleanQuery.split(/\s+/).filter(Boolean);
+  const negTokens = cleanNeg.split(/\s+/).filter(Boolean);
+  
+  if (negTokens.length === 0) return false;
+
+  if (matchType === 'BROAD') {
+    // Broad match: all negative tokens must be present as whole words in the query
+    return negTokens.every(tok => queryTokens.includes(tok));
+  } else if (matchType === 'PHRASE') {
+    // Phrase match: all negative tokens must be present in the query in the exact same order and contiguous
+    const queryStr = ' ' + queryTokens.join(' ') + ' ';
+    const negStr = ' ' + negTokens.join(' ') + ' ';
+    return queryStr.includes(negStr);
+  } else if (matchType === 'EXACT') {
+    // Exact match: the query tokens must match the negative tokens exactly
+    return queryTokens.join(' ') === negTokens.join(' ');
+  }
+  return false;
+}
+
+/**
  * Stage 1 Diagnostic Ingestion & Calculations
  */
 function runStage1Diagnostics(searchTerms, campaignConfig) {
@@ -96,10 +124,13 @@ function runStage1Diagnostics(searchTerms, campaignConfig) {
       }
     }
     
+    const cleanQuery = query.toLowerCase().replace(/[^\w\s]/g, ' ').trim();
+    const queryTokens = cleanQuery.split(/\s+/).filter(Boolean);
+
     // Check local price-anchored patterns
-    const priceMatch = PRICE_WORDS.find(word => query.includes(word));
+    const priceMatch = PRICE_WORDS.find(word => queryTokens.includes(word));
     // Check local informational patterns
-    const infoMatch = INFO_WORDS.find(word => query.includes(word));
+    const infoMatch = INFO_WORDS.find(word => queryTokens.includes(word));
     
     if (isLocalCompetitor && extractedCompetitor) {
       if (!isAlreadyNegative(extractedCompetitor, campaignObj, 'PHRASE')) {
@@ -244,21 +275,19 @@ function runLeakageDiagnostics(searchTerms, campaigns) {
     const negatives = campaignObj.currentNegativeKeywords || [];
 
     // Pre-calculate if the query is already blocked in the current campaign
-    const isBlockedInCurrent = negatives.some(n => {
-      const nKw = n.keyword.toLowerCase().trim();
-      if (n.matchType === 'BROAD') return nKw.split(/\s+/).every(tok => query.includes(tok));
-      if (n.matchType === 'PHRASE') return query.includes(nKw);
-      if (n.matchType === 'EXACT') return query === nKw;
-      return false;
-    });
+    const isBlockedInCurrent = negatives.some(n => 
+      isNegativeKeywordMatch(query, n.keyword, n.matchType)
+    );
 
     negatives.forEach(neg => {
       const negKeyword = neg.keyword.toLowerCase().trim();
       
       // 1. Broad AND Trap check: negative broad has multiple words, but search query only had one
       if (neg.matchType === 'BROAD' && negKeyword.includes(' ')) {
-        const tokens = negKeyword.split(/\s+/);
-        const matchedTokens = tokens.filter(tok => query.includes(tok));
+        const cleanQuery = query.toLowerCase().replace(/[^\w\s]/g, ' ').trim();
+        const queryTokens = cleanQuery.split(/\s+/).filter(Boolean);
+        const tokens = negKeyword.toLowerCase().replace(/[^\w\s]/g, ' ').trim().split(/\s+/).filter(Boolean);
+        const matchedTokens = tokens.filter(tok => queryTokens.includes(tok));
         
         // If query has some but not all of the tokens, it triggered because of the AND logic!
         if (matchedTokens.length > 0 && matchedTokens.length < tokens.length) {
@@ -267,17 +296,20 @@ function runLeakageDiagnostics(searchTerms, campaigns) {
             search_term: term.search_term,
             campaign: term.campaign,
             negative_keyword: neg.keyword,
-            evidence: `Query matched keywords [${matchedTokens.join(', ')}] but slipped through broad negative '${neg.keyword}' because it lacks [${tokens.filter(tok => !query.includes(tok)).join(', ')}] due to Broad AND logic.`
+            evidence: `Query matched keywords [${matchedTokens.join(', ')}] but slipped through broad negative '${neg.keyword}' because it lacks [${tokens.filter(tok => !queryTokens.includes(tok)).join(', ')}] due to Broad AND logic.`
           });
         }
       }
 
       // 2. Phrase match word order check
       if (neg.matchType === 'PHRASE') {
-        const tokens = negKeyword.split(/\s+/);
+        const cleanQuery = query.toLowerCase().replace(/[^\w\s]/g, ' ').trim();
+        const queryTokens = cleanQuery.split(/\s+/).filter(Boolean);
+        const tokens = negKeyword.toLowerCase().replace(/[^\w\s]/g, ' ').trim().split(/\s+/).filter(Boolean);
+        
         // If all words are present but order has flipped or split
-        const allPresent = tokens.every(tok => query.includes(tok));
-        if (allPresent && !query.includes(negKeyword)) {
+        const allPresent = tokens.every(tok => queryTokens.includes(tok));
+        if (allPresent && !isNegativeKeywordMatch(query, neg.keyword, 'PHRASE')) {
           leaks.push({
             type: 'phrase-word-order-failure',
             search_term: term.search_term,
@@ -296,18 +328,8 @@ function runLeakageDiagnostics(searchTerms, campaigns) {
         if (otherCamp.campaignId === campaignId) return;
         const otherNegs = otherCamp.currentNegativeKeywords || [];
         otherNegs.forEach(otherNeg => {
-          const otherNegKeyword = otherNeg.keyword.toLowerCase().trim();
           // Check if otherNeg would block this query
-          let wouldBlock = false;
-          if (otherNeg.matchType === 'BROAD') {
-            wouldBlock = otherNegKeyword.split(/\s+/).every(tok => query.includes(tok));
-          } else if (otherNeg.matchType === 'PHRASE') {
-            wouldBlock = query.includes(otherNegKeyword);
-          } else if (otherNeg.matchType === 'EXACT') {
-            wouldBlock = query === otherNegKeyword;
-          }
-
-          if (wouldBlock) {
+          if (isNegativeKeywordMatch(query, otherNeg.keyword, otherNeg.matchType)) {
             leaks.push({
               type: 'campaign-coverage-gap',
               search_term: term.search_term,
@@ -598,10 +620,7 @@ function calculateRecoveryTimeline(score, smartBiddingStatus, aiMaxStatus) {
    cheap: ['cheapest', 'inexpensive', 'bargain'],
    jobs: ['job', 'career', 'careers', 'hiring', 'employment', 'internship', 'intern', 'salary', 'salaries', 'vacancy', 'vacancies'],
    job: ['jobs', 'career', 'careers', 'hiring', 'employment', 'internship', 'intern', 'salary', 'salaries', 'vacancy', 'vacancies'],
-   salary: ['jobs', 'job', 'careers', 'career', 'hiring', 'recruitment', 'vacancies', 'vacancy', 'wages', 'wage'],
-   nhs: ['free dentist', 'nhs dental', 'nhs dentist manchester'],
-   orthodontist: ['orthodontics', 'braces', 'invisalign'],
-   implant: ['implants', 'veneers', 'veneer', 'crown', 'crowns']
+   salary: ['jobs', 'job', 'careers', 'career', 'hiring', 'recruitment', 'vacancies', 'vacancy', 'wages', 'wage']
  };
  
  /**
@@ -657,5 +676,6 @@ function calculateRecoveryTimeline(score, smartBiddingStatus, aiMaxStatus) {
    expandNegativeSynonyms,
    isAlreadyNegative,
    isConflictingWithConverting,
+   isNegativeKeywordMatch,
    CATEGORIES
  };

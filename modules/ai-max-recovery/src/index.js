@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 const { parseSearchTerms, parseCampaignConfig, parseBusinessContext } = require('./parser');
-const { runStage1Diagnostics, expandNegativeSynonyms, isAlreadyNegative, isConflictingWithConverting, CATEGORIES } = require('./diagnostics');
+const { runStage1Diagnostics, expandNegativeSynonyms, isAlreadyNegative, isConflictingWithConverting, isNegativeKeywordMatch, CATEGORIES } = require('./diagnostics');
 const { classifySearchTerms, postProcessRecommendations } = require('./gemini');
 const { validateOutput } = require('./schemaValidator');
 
@@ -146,15 +146,7 @@ async function runRecoveryAudit(searchTermsOrPath, campaignConfigOrPath, busines
         if (!rec.applicableCampaigns.includes(campaignId)) return false;
       }
       
-      // Keyword match type check
-      const recKw = rec.keyword.toLowerCase().trim();
-      if (rec.matchType === 'BROAD') {
-        return recKw.split(/\s+/).every(tok => query.includes(tok));
-      } else if (rec.matchType === 'PHRASE') {
-        return query.includes(recKw);
-      } else {
-        return query === recKw;
-      }
+      return isNegativeKeywordMatch(query, rec.keyword, rec.matchType);
     });
 
     if (matchingRec) {
@@ -263,18 +255,7 @@ function aggregateJunkPatterns(searchTerms, recommendations) {
     
     // Find if any recommended negative keyword matches this query
     const matchingRec = recommendations.find(rec => {
-      const recKw = rec.keyword.toLowerCase().trim();
-      
-      if (rec.matchType === 'BROAD') {
-        // Broad matches if all words are present
-        return recKw.split(/\s+/).every(tok => query.includes(tok));
-      } else if (rec.matchType === 'PHRASE') {
-        // Phrase matches if word is a substring
-        return query.includes(recKw);
-      } else {
-        // Exact match
-        return query === recKw;
-      }
+      return isNegativeKeywordMatch(query, rec.keyword, rec.matchType);
     });
 
     const category = matchingRec ? matchingRec.sourceCategory : 'other';
