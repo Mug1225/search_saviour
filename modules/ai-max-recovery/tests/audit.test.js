@@ -92,6 +92,13 @@ async function testSuite() {
     assert.equal(isNegativeKeywordMatch('emergency dentist london', 'emergency dentist', 'EXACT'), false, 'EXACT: extra words should not match');
     assert.equal(isNegativeKeywordMatch('emergency dentist,', 'emergency dentist', 'EXACT'), true, 'EXACT: punctuation should be ignored');
 
+    // Singular/Plural Grammatical Edge Cases
+    const { getSingularPluralVariations } = require('../src/diagnostics');
+    assert.deepEqual(getSingularPluralVariations('human'), ['human', 'humans'], 'Should not convert human to humen');
+    assert.deepEqual(getSingularPluralVariations('german'), ['german', 'germans'], 'Should not convert german to germen');
+    assert.deepEqual(getSingularPluralVariations('spokesman'), ['spokesman', 'spokesmen'], 'Should convert spokesman to spokesmen');
+    assert.deepEqual(getSingularPluralVariations('potatoes'), ['potatoes', 'potato'], 'Should convert potatoes to potato (and not potatoe)');
+
     console.log('  ✅ Whole-word matching validation successful.\n');
 
     console.log('🎉 ALL TESTS COMPLETED SUCCESSFULLY! MODULE IS CORRECT.');

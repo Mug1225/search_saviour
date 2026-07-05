@@ -18,14 +18,16 @@ const CATEGORIES = {
   OTHER: 'other'
 };
 
-// Obvious low-intent pricing tokens used by the local rule-based classifier
-const PRICE_WORDS = ['free', 'cheap', 'cheapest', 'discount', 'coupon', 'promo', 'freebie'];
-
-// Obvious standard informational/career-oriented tokens used by the local rule-based classifier
-const INFO_WORDS = ['job', 'jobs', 'career', 'careers', 'hiring', 'salary', 'salaries', 'course', 'courses', 'training', 'resume', 'intern', 'wikipedia', 'reddit', 'tutorial', 'tutorials', 'salary uk', 'master', 'manager', 'scrum', 'pmp', 'agile', 'developer', 'designer', 'director', 'certification'];
-
-// Comparative indicator words that suggest competitor queries
-const COMPARATIVE_WORDS = ['vs', 'alternative', 'alternatives', 'review', 'reviews', 'competitor', 'comparison', 'pricing'];
+const {
+  IRREGULAR_SINGULAR_TO_PLURAL,
+  IRREGULAR_PLURAL_TO_SINGULAR,
+  F_FE_S_ONLY,
+  O_ES_PLURAL,
+  PRICE_WORDS,
+  INFO_WORDS,
+  COMPARATIVE_WORDS,
+  SYNONYM_DICTIONARY
+} = require('./config/grammar');
 
 /**
  * Evaluates whether a negative keyword blocks a search query based on exact whole-word matching.
@@ -388,25 +390,97 @@ function isConflictingWithConverting(candidateKeyword, convertingTerms, campaign
 
 /**
  * Generates both singular and plural forms of a given string.
- * Supports basic 'y' <-> 'ies' spelling rules.
+ * Supports basic 'y' <-> 'ies' spelling rules, irregular nouns, and suffix-based mutations.
  */
 function getSingularPluralVariations(keyword) {
   const variations = [keyword];
   const kw = keyword.toLowerCase().trim();
+
+  // 1. Direct Irregular Mapping Check
+  if (IRREGULAR_SINGULAR_TO_PLURAL[kw]) {
+    variations.push(IRREGULAR_SINGULAR_TO_PLURAL[kw]);
+    return variations;
+  }
+  if (IRREGULAR_PLURAL_TO_SINGULAR[kw]) {
+    variations.push(IRREGULAR_PLURAL_TO_SINGULAR[kw]);
+    return variations;
+  }
+
+  // 2. Suffix-based Irregular Check (-man / -men)
+  const MAN_EXCEPTIONS = new Set(['human', 'german', 'shaman', 'cayman', 'humen', 'germans', 'shamans', 'caymans']);
   
-  if (kw.endsWith('s') && kw.length > 3) {
+  if (kw.endsWith('man') && kw.length >= 3 && !MAN_EXCEPTIONS.has(kw)) {
+    variations.push(kw.slice(0, -3) + 'men');
+    return variations;
+  }
+  if (kw.endsWith('men') && kw.length >= 3 && !MAN_EXCEPTIONS.has(kw)) {
+    variations.push(kw.slice(0, -3) + 'man');
+    return variations;
+  }
+
+  // 3. Suffix-based Irregular Check (-f / -fe / -ves)
+  if (kw.endsWith('ves') && kw.length > 3) {
+    // Plural to singular (e.g. leaves -> leaf, lives -> life)
+    variations.push(kw.slice(0, -3) + 'f');
+    variations.push(kw.slice(0, -3) + 'fe');
+    return variations;
+  }
+  if (kw.endsWith('fe') && kw.length > 2) {
+    if (F_FE_S_ONLY.has(kw)) {
+      variations.push(kw + 's');
+    } else {
+      variations.push(kw.slice(0, -2) + 'ves');
+    }
+    return variations;
+  }
+  if (kw.endsWith('f') && kw.length > 2) {
+    if (kw.endsWith('ff') || F_FE_S_ONLY.has(kw)) {
+      variations.push(kw + 's');
+    } else {
+      variations.push(kw.slice(0, -1) + 'ves');
+      variations.push(kw + 's');
+    }
+    return variations;
+  }
+
+  // 4. Standard Suffix Rules
+  const isSingularEndingInS = /(?:ss|us|is|as)$/.test(kw);
+
+  if (kw.endsWith('s') && kw.length > 3 && !isSingularEndingInS) {
     if (kw.endsWith('ies')) {
       variations.push(kw.slice(0, -3) + 'y'); // e.g. vacancies -> vacancy
+    } else if (kw.endsWith('es')) {
+      if (/(?:ch|sh|x|z|s)es$/.test(kw)) {
+        if (kw.endsWith('ses') && !kw.endsWith('sses')) {
+          // Could be analyses -> analysis, or buses -> bus
+          variations.push(kw.slice(0, -2)); // bus
+          variations.push(kw.slice(0, -3) + 'sis'); // analysis
+        } else {
+          variations.push(kw.slice(0, -2)); // classes -> class, boxes -> box
+        }
+      } else if (kw.endsWith('oes') && O_ES_PLURAL.has(kw.slice(0, -2))) {
+        variations.push(kw.slice(0, -2)); // potatoes -> potato, heroes -> hero
+      } else {
+        variations.push(kw.slice(0, -1)); // e.g. jobs -> job
+      }
     } else {
       variations.push(kw.slice(0, -1)); // e.g. jobs -> job
     }
   } else if (kw.length > 2) {
-    if (kw.endsWith('y')) {
-      variations.push(kw.slice(0, -1) + 'ies'); // e.g. agency -> agencies
+    if (O_ES_PLURAL.has(kw)) {
+      variations.push(kw + 'es');
+    } else if (kw.endsWith('y') && !/[aeiou]y$/.test(kw)) {
+      variations.push(kw.slice(0, -1) + 'ies'); // agency -> agencies (but not toy -> toys)
+    } else if (kw.endsWith('is')) {
+      variations.push(kw.slice(0, -2) + 'es'); // analysis -> analyses
+    } else if (/(?:ch|sh|x|z|s)$/.test(kw)) {
+      // Includes ss, so class -> classes, box -> boxes, bus -> buses
+      variations.push(kw + 'es');
     } else {
-      variations.push(kw + 's'); // e.g. job -> jobs
+      variations.push(kw + 's'); // job -> jobs
     }
   }
+
   return variations;
 }
 
@@ -615,14 +689,6 @@ function calculateRecoveryTimeline(score, smartBiddingStatus, aiMaxStatus) {
    };
  }
  
- const SYNONYM_DICTIONARY = {
-   free: ['freebie', 'complimentary', 'no-cost', 'gratis', 'zero-cost'],
-   cheap: ['cheapest', 'inexpensive', 'bargain'],
-   jobs: ['job', 'career', 'careers', 'hiring', 'employment', 'internship', 'intern', 'salary', 'salaries', 'vacancy', 'vacancies'],
-   job: ['jobs', 'career', 'careers', 'hiring', 'employment', 'internship', 'intern', 'salary', 'salaries', 'vacancy', 'vacancies'],
-   salary: ['jobs', 'job', 'careers', 'career', 'hiring', 'recruitment', 'vacancies', 'vacancy', 'wages', 'wage']
- };
- 
  /**
   * Closes "The Synonym Gap" (PRD & Gotcha 1 of Match Types Cheat Sheet)
   * Recommends the complete synonym cluster for identified category-defining negatives
@@ -677,5 +743,6 @@ function calculateRecoveryTimeline(score, smartBiddingStatus, aiMaxStatus) {
    isAlreadyNegative,
    isConflictingWithConverting,
    isNegativeKeywordMatch,
+   getSingularPluralVariations,
    CATEGORIES
  };
