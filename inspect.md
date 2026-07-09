@@ -42,6 +42,17 @@ The logical entry point is the `runRecoveryAudit` function in [src/index.js](fil
   - The `apiKey` check: verify it throws a strict error in production instead of silently using the local mock fallback.
   - The `useCache` check: verify it evaluates to `false` in production, bypassing local disk reads/writes.
 
+### 5. Multi-Word Competitor Extraction Safety Boundaries
+* **File**: [src/diagnostics.js](file:///c:/programs/search-saviour/task-1%20AI%20hangover/search_saviour/modules/ai-max-recovery/src/diagnostics.js#L104-L132)
+* **What to inspect**:
+  - Boundary checks verifying that adjacent brand tokens must be at the query's start or end to prevent single generic word extractions of multi-word brand names (e.g. `"active"` from `"ProjectFlow vs Active Campaign"`).
+
+### 6. Safety Shield & Cartesian Permutations
+* **File**: [src/diagnostics.js](file:///c:/programs/search-saviour/task-1%20AI%20hangover/search_saviour/modules/ai-max-recovery/src/diagnostics.js#L358-L406)
+* **What to inspect**:
+  - `getPhraseVariations()`: Generates Cartesian-product permutations of phrases to check safety of middle words.
+  - `isConflictingWithConverting()`: Safety engine conflict evaluation using the actual recommended `matchType`.
+
 ---
 
 ## 📊 Step 3: Run Manual Audits and Inspect Outputs
@@ -52,9 +63,14 @@ To manually execute and inspect the outputs on the three sample scenarios:
    ```bash
    cd modules/ai-max-recovery
    ```
-2. **Execute the Scenario Runner**:
-   ```bash
-   node src/index.js --run-fixtures
+2. **Execute the Scenario Runner (Offline Mode)**:
+   On Windows CMD:
+   ```cmd
+   set NODE_ENV=test&&node src/index.js --run-fixtures
+   ```
+   On PowerShell:
+   ```powershell
+   $env:NODE_ENV="test"; node src/index.js --run-fixtures; Remove-Item Env:\NODE_ENV
    ```
 3. **Inspect the Output JSON files**:
    Open the scenario folders inside `Task Briefs/searchsavior_input_fixtures/` (e.g., [scenario-1-heavy-hangover/audit_output.json](file:///c:/programs/search-saviour/task-1%20AI%20hangover/search_saviour/modules/ai-max-recovery/Task%20Briefs/searchsavior_input_fixtures/scenario-1-heavy-hangover/audit_output.json)).

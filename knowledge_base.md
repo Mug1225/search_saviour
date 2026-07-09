@@ -43,6 +43,17 @@ To balance speed, operational cost, and intelligence, the audit engine is split 
   ```
   accepts **either** local file paths or raw JS objects/arrays. This supports both local file audits (CLI/tests) and direct in-memory API integrations.
 
+### 5. Negative Keyword Match Rules & Close-Variant Coverage Gaps
+* **No Close-Variants for Negatives**: In Google Ads, negative keywords do not match close-variants (plurals, singulars, misspellings). Thus, `isAlreadyNegative` must perform exact string matching, as having `job` negative does not block `jobs`.
+* **Proactive S/P Variant Expansion**: Implemented `expandGrammaticalVariants` to proactively suggest missing singular/plural variations of both recommended negatives and pre-existing campaign negatives, closing the close-variant leakage gap.
+
+### 6. Match-Type Aware Safety Engine
+* **Match-Type Aware Conflict Checks**: Refactored `isConflictingWithConverting` to accept the recommended match type (`EXACT`, `PHRASE`, `BROAD`) and call the standard match check `isNegativeKeywordMatch`. This prevents over-restrictive broad-match safety checks from discarding valid exact/phrase negative recommendations.
+* **Cartesian Phrase Permutations**: Implemented `getPhraseVariations` to generate Cartesian-product permutations of multi-word phrases, ensuring that singulars/plurals in the middle of phrases (e.g. `"vacancies dental"`) are resolved correctly to check converting traffic safety.
+
+### 7. Competitor Safety Boundary-Token Guardrails
+* **Boundary-Token Heuristics**: Multi-word competitor brand extraction is guarded locally by boundary checks. If competitor brand candidates are not at the boundary (start/end) of the comparison query, local extraction is skipped and delegated to the Stage 2 LLM. This prevents the extraction of dangerous single generic words (like `"active"` from `"ProjectFlow vs Active Campaign"`).
+
 ---
 
 ## 📂 Git & Monorepo Best Practices

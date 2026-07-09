@@ -79,7 +79,7 @@ function runStage1Diagnostics(searchTerms, campaignConfig) {
   }
   
   // 2. Perform Negative keyword leakage & failure diagnostics
-  const leakageDetections = runLeakageDiagnostics(searchTerms, campaigns);
+  const leakageDetections = runLeakageDiagnostics(wastedTerms, campaigns);
   
   // 3. Programmatic (Rule-Based) Classification of Candidate Negatives
   const localRecommendations = [];
@@ -113,16 +113,43 @@ function runStage1Diagnostics(searchTerms, campaignConfig) {
       if (comparativeTokenIndex < tokens.length - 1) adjacentTokens.push(tokens[comparativeTokenIndex + 1]);
       
       const ourBrandWords = campaignConfig.accountName.toLowerCase().split(/\s+/);
-      const possibleBrands = adjacentTokens.filter(tok => {
-        return !ourBrandWords.includes(tok) && 
-               !PRICE_WORDS.includes(tok) && 
-               !INFO_WORDS.includes(tok) &&
-               tok.length > 2;
-      });
+      const hasOurBrand = adjacentTokens.some(tok => ourBrandWords.includes(tok.toLowerCase()));
       
-      if (possibleBrands.length > 0) {
-        extractedCompetitor = possibleBrands[0];
-        isLocalCompetitor = true;
+      if (hasOurBrand) {
+        // Enforce boundary safety checks to prevent extracting single words from multi-word competitor brands
+        // (e.g. extracting 'active' from 'ProjectFlow vs Active Campaign')
+        let isBoundarySafe = false;
+        
+        // Find which adjacent token is the candidate competitor brand
+        // (it's the one that is NOT our brand)
+        const competitorIndex = adjacentTokens.findIndex(tok => !ourBrandWords.includes(tok.toLowerCase()));
+        if (competitorIndex !== -1) {
+          const candidateToken = adjacentTokens[competitorIndex];
+          const actualTokenIndex = tokens.indexOf(candidateToken);
+          
+          if (actualTokenIndex > comparativeTokenIndex) {
+            // Competitor candidate is AFTER the comparative word: must be the last word in the query
+            isBoundarySafe = (actualTokenIndex === tokens.length - 1);
+          } else if (actualTokenIndex < comparativeTokenIndex) {
+            // Competitor candidate is BEFORE the comparative word: must be the first word in the query
+            isBoundarySafe = (actualTokenIndex === 0);
+          }
+        }
+
+        if (isBoundarySafe) {
+          const possibleBrands = adjacentTokens.filter(tok => {
+            const lowerTok = tok.toLowerCase();
+            return !ourBrandWords.includes(lowerTok) && 
+                   !PRICE_WORDS.includes(lowerTok) && 
+                   !INFO_WORDS.includes(lowerTok) &&
+                   tok.length > 2;
+          });
+          
+          if (possibleBrands.length > 0) {
+            extractedCompetitor = possibleBrands[0];
+            isLocalCompetitor = true;
+          }
+        }
       }
     }
     
@@ -355,36 +382,51 @@ function runLeakageDiagnostics(searchTerms, campaigns) {
  * Checks both the proposed keyword and its singular/plural variations (e.g. 'jobs' vs 'job')
  * to ensure that neither blocks profitable, converting keywords.
  */
-function isConflictingWithConverting(candidateKeyword, convertingTerms, campaignName) {
-  const normalizedCandidate = candidateKeyword.toLowerCase().trim();
-  const variations = getSingularPluralVariations(normalizedCandidate);
+/**
+ * Generates all singular/plural permutations of a multi-word phrase.
+ * If it is a single word, it simply returns the singular/plural variations of that word.
+ */
+function getPhraseVariations(phrase) {
+  const words = phrase.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
   
-  // Strictly check conflicts within the SAME campaign (campaign-specific target boundary check)
-  // or across ALL campaigns if campaignName is not provided (cross-campaign/account-level check)
+  // Generate word-level variations
+  const wordVariations = words.map(w => getSingularPluralVariations(w));
+
+  // Generate permutations using a standard cartesian product recursion
+  const results = [];
+  const generate = (index, current) => {
+    if (index === wordVariations.length) {
+      results.push(current.join(' '));
+      return;
+    }
+    for (const variant of wordVariations[index]) {
+      generate(index + 1, [...current, variant]);
+    }
+  };
+
+  generate(0, []);
+  return Array.from(new Set(results));
+}
+
+/**
+ * The Safety Engine: Verifies that a candidate negative does NOT conflict with converting traffic.
+ * Checks both the proposed keyword and its singular/plural variations.
+ * Uses matchType-aware comparisons to prevent over-restrictive broad-match safety pruning.
+ */
+function isConflictingWithConverting(candidateKeyword, convertingTerms, campaignName, matchType = 'BROAD') {
+  const normalizedCandidate = candidateKeyword.toLowerCase().trim();
+  const variations = getPhraseVariations(normalizedCandidate);
+  
   const campaignConverting = campaignName 
     ? convertingTerms.filter(t => t.campaign === campaignName)
     : convertingTerms;
 
   return campaignConverting.some(convertingTerm => {
-    const normConverting = convertingTerm.search_term.toLowerCase().trim();
-    
-    // Check direct and variant conflicts
-    for (let variant of variations) {
-      // Clean punctuation for safe word matching to avoid false negative conflicts
-      const cleanVariant = variant.replace(/[^\w\s]/g, '').trim();
-      const cleanConverting = normConverting.replace(/[^\w\s]/g, '').trim();
-      
-      if (cleanConverting === cleanVariant) return true;
-      
-      const words = cleanVariant.split(/\s+/).filter(Boolean);
-      const convertingWords = cleanConverting.split(/\s+/).filter(Boolean);
-      
-      if (words.length > 0 && words.every(w => convertingWords.includes(w))) {
-        return true;
-      }
-    }
-
-    return false;
+    const query = convertingTerm.search_term.toLowerCase().trim();
+    return variations.some(variant => 
+      isNegativeKeywordMatch(query, variant, matchType)
+    );
   });
 }
 
@@ -719,7 +761,7 @@ function calculateRecoveryTimeline(score, smartBiddingStatus, aiMaxStatus) {
        if (isAlreadyNegative(syn, campaignObj, rec.matchType)) return;
  
        // Verify it does not conflict with active converting terms in that campaign
-       if (isConflictingWithConverting(syn, convertingTerms, campaignObj.campaignName)) return;
+       if (isConflictingWithConverting(syn, convertingTerms, campaignObj.campaignName, rec.matchType)) return;
  
        // Add as a prophylactic synonym recommendation
        expandedRecs.push({
@@ -757,7 +799,7 @@ function expandGrammaticalVariants(recommendations, searchTerms, campaignConfig)
     if (isAlreadyNegative(variant, campaignObj, matchType)) return;
 
     // Verify it does not conflict with active converting terms in that campaign
-    if (isConflictingWithConverting(variant, convertingTerms, campaignObj.campaignName)) return;
+    if (isConflictingWithConverting(variant, convertingTerms, campaignObj.campaignName, matchType)) return;
 
     // Check if this variant is already recommended for the same campaign
     const alreadyRecommended = expandedRecs.some(r => 
@@ -829,5 +871,6 @@ module.exports = {
   isConflictingWithConverting,
   isNegativeKeywordMatch,
   getSingularPluralVariations,
+  getPhraseVariations,
   CATEGORIES
 };

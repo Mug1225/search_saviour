@@ -107,7 +107,7 @@ async function runRecoveryAudit(searchTermsOrPath, campaignConfigOrPath, busines
     
     if (recCampaignIds.length === 0) {
       // Account-level negative: check conflict across all campaigns (cross-campaign check)
-      const hasConflict = isConflictingWithConverting(rec.keyword, convertingTerms, null);
+      const hasConflict = isConflictingWithConverting(rec.keyword, convertingTerms, null, rec.matchType);
       if (hasConflict) {
         continue; // Drop the entire account-level recommendation
       }
@@ -117,7 +117,7 @@ async function runRecoveryAudit(searchTermsOrPath, campaignConfigOrPath, busines
       const safeCampaignIds = [];
       for (const campaignId of recCampaignIds) {
         const campaignObj = campaignConfig.campaigns.find(c => c.campaignId === campaignId);
-        const hasConflict = isConflictingWithConverting(rec.keyword, convertingTerms, campaignObj.campaignName);
+        const hasConflict = isConflictingWithConverting(rec.keyword, convertingTerms, campaignObj.campaignName, rec.matchType);
         if (!hasConflict) {
           safeCampaignIds.push(campaignId);
         }
