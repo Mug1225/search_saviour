@@ -489,10 +489,10 @@ function getSingularPluralVariations(keyword) {
  */
 function isAlreadyNegative(keyword, campaignObj, recommendedMatchType = 'EXACT') {
   if (!campaignObj || !campaignObj.currentNegativeKeywords) return false;
-  const keywordVariants = getSingularPluralVariations(keyword.toLowerCase().trim());
+  const normalizedKeyword = keyword.toLowerCase().trim();
   return campaignObj.currentNegativeKeywords.some(neg => {
     const negKeyword = neg.keyword.toLowerCase().trim();
-    if (keywordVariants.includes(negKeyword)) {
+    if (negKeyword === normalizedKeyword) {
       const existingMatchType = (neg.matchType || 'BROAD').toUpperCase();
       const recMatchType = recommendedMatchType.toUpperCase();
       
@@ -737,12 +737,97 @@ function calculateRecoveryTimeline(score, smartBiddingStatus, aiMaxStatus) {
    return expandedRecs;
  }
  
- module.exports = {
-   runStage1Diagnostics,
-   expandNegativeSynonyms,
-   isAlreadyNegative,
-   isConflictingWithConverting,
-   isNegativeKeywordMatch,
-   getSingularPluralVariations,
-   CATEGORIES
- };
+ /**
+ * Proactively identifies and recommends missing singular/plural variations of both:
+ * 1. Newly recommended negative keywords
+ * 2. Pre-existing negative keywords configured in the campaigns
+ * to prevent match-type close-variant budget leakages.
+ */
+function expandGrammaticalVariants(recommendations, searchTerms, campaignConfig) {
+  const campaigns = campaignConfig.campaigns;
+  const expandedRecs = [...recommendations];
+  const convertingTerms = searchTerms.filter(t => t.conversions > 0);
+
+  // Helper to safely add a preventative recommendation
+  const addProactiveVariant = (variant, matchType, sourceCategory, campaignId, reasonPrefix) => {
+    const campaignObj = campaigns.find(c => c.campaignId === campaignId);
+    if (!campaignObj) return;
+
+    // Verify it is not already negative in the campaign
+    if (isAlreadyNegative(variant, campaignObj, matchType)) return;
+
+    // Verify it does not conflict with active converting terms in that campaign
+    if (isConflictingWithConverting(variant, convertingTerms, campaignObj.campaignName)) return;
+
+    // Check if this variant is already recommended for the same campaign
+    const alreadyRecommended = expandedRecs.some(r => 
+      r.keyword === variant && 
+      (r.applicableCampaigns || []).includes(campaignId)
+    );
+    if (alreadyRecommended) return;
+
+    expandedRecs.push({
+      keyword: variant,
+      matchType: matchType,
+      reason: `${reasonPrefix} to close the close-variant gap and prevent budget leakage.`,
+      estimatedMonthlyWaste: 0.00, // $0.00 as it is preventative
+      sourceCategory: sourceCategory,
+      confidence: 0.90, // Proactive validation confidence
+      applicableCampaigns: [campaignId]
+    });
+  };
+
+  // 1. Expand new recommendations
+  recommendations.forEach(rec => {
+    const term = rec.keyword.toLowerCase().trim();
+    const variations = getSingularPluralVariations(term);
+    const campaignId = rec.applicableCampaigns[0];
+    if (!campaignId) return;
+
+    variations.forEach(variant => {
+      if (variant === term) return; // Skip original
+      addProactiveVariant(
+        variant,
+        rec.matchType,
+        rec.sourceCategory,
+        campaignId,
+        `Proactive negative block for singular/plural variant of recommended negative '${rec.keyword}'`
+      );
+    });
+  });
+
+  // 2. Expand pre-existing negative keywords
+  campaigns.forEach(campaignObj => {
+    const campaignId = campaignObj.campaignId;
+    const currentNegatives = campaignObj.currentNegativeKeywords || [];
+
+    currentNegatives.forEach(neg => {
+      const term = neg.keyword.toLowerCase().trim();
+      const variations = getSingularPluralVariations(term);
+
+      variations.forEach(variant => {
+        if (variant === term) return; // Skip original
+        addProactiveVariant(
+          variant,
+          neg.matchType || 'BROAD',
+          CATEGORIES.OTHER,
+          campaignId,
+          `Proactive negative block for missing singular/plural variant of active negative '${neg.keyword}'`
+        );
+      });
+    });
+  });
+
+  return expandedRecs;
+}
+
+module.exports = {
+  runStage1Diagnostics,
+  expandNegativeSynonyms,
+  expandGrammaticalVariants,
+  isAlreadyNegative,
+  isConflictingWithConverting,
+  isNegativeKeywordMatch,
+  getSingularPluralVariations,
+  CATEGORIES
+};

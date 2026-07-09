@@ -93,13 +93,25 @@ async function testSuite() {
     assert.equal(isNegativeKeywordMatch('emergency dentist,', 'emergency dentist', 'EXACT'), true, 'EXACT: punctuation should be ignored');
 
     // Singular/Plural Grammatical Edge Cases
-    const { getSingularPluralVariations } = require('../src/diagnostics');
+    const { getSingularPluralVariations, isAlreadyNegative } = require('../src/diagnostics');
     assert.deepEqual(getSingularPluralVariations('human'), ['human', 'humans'], 'Should not convert human to humen');
     assert.deepEqual(getSingularPluralVariations('german'), ['german', 'germans'], 'Should not convert german to germen');
     assert.deepEqual(getSingularPluralVariations('spokesman'), ['spokesman', 'spokesmen'], 'Should convert spokesman to spokesmen');
     assert.deepEqual(getSingularPluralVariations('potatoes'), ['potatoes', 'potato'], 'Should convert potatoes to potato (and not potatoe)');
 
-    console.log('  ✅ Whole-word matching validation successful.\n');
+    const mockCampaign = {
+      campaignName: 'Test Campaign',
+      campaignId: '123',
+      currentNegativeKeywords: [{ keyword: 'job', matchType: 'BROAD' }]
+    };
+    assert.equal(isAlreadyNegative('jobs', mockCampaign, 'BROAD'), false, 'isAlreadyNegative should return false for singular/plural variations because negatives do not match close variants');
+    assert.equal(isAlreadyNegative('job', mockCampaign, 'BROAD'), true, 'isAlreadyNegative should return true for exact match');
+
+    // Verify that the final audit contains proactive variant recommendations
+    const hasJobsNeg = auditResult.recommendedNegatives.some(r => r.keyword === 'jobs' && r.matchType === 'BROAD');
+    assert.ok(hasJobsNeg, 'Should proactively recommend plural variant "jobs" since the campaign has active negative "job"');
+
+    console.log('  ✅ Whole-word matching and close-variant validation successful.\n');
 
     console.log('🎉 ALL TESTS COMPLETED SUCCESSFULLY! MODULE IS CORRECT.');
   } catch (err) {

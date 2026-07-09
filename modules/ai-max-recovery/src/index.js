@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 const { parseSearchTerms, parseCampaignConfig, parseBusinessContext } = require('./parser');
-const { runStage1Diagnostics, expandNegativeSynonyms, isAlreadyNegative, isConflictingWithConverting, isNegativeKeywordMatch, CATEGORIES } = require('./diagnostics');
+const { runStage1Diagnostics, expandNegativeSynonyms, expandGrammaticalVariants, isAlreadyNegative, isConflictingWithConverting, isNegativeKeywordMatch, CATEGORIES } = require('./diagnostics');
 const { classifySearchTerms, postProcessRecommendations } = require('./gemini');
 const { validateOutput } = require('./schemaValidator');
 
@@ -67,6 +67,9 @@ async function runRecoveryAudit(searchTermsOrPath, campaignConfigOrPath, busines
 
   // Close "The Synonym Gap" by programmatically expanding negative keywords to their synonym clusters
   let expandedRecommendations = expandNegativeSynonyms(uniqueRecommendations, searchTerms, campaignConfig);
+
+  // Close "The Grammatical Variation Gap" by programmatically expanding negative keywords to their singular/plural variations
+  expandedRecommendations = expandGrammaticalVariants(expandedRecommendations, searchTerms, campaignConfig);
 
   // Post-process the final expanded recommendations to make sure everything meets UI constraints
   expandedRecommendations = postProcessRecommendations(expandedRecommendations);
