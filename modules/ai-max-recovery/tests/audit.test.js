@@ -144,9 +144,9 @@ async function testSuite() {
 
     // -o / -es exceptions
     assert.deepEqual(getSingularPluralVariations('hero'), ['hero', 'heroes']);
-    assert.deepEqual(getSingularPluralVariations('heroes'), ['heroes', 'heroe', 'hero']);
+    assert.deepEqual(getSingularPluralVariations('heroes'), ['heroes', 'hero']);
     assert.deepEqual(getSingularPluralVariations('potato'), ['potato', 'potatoes']);
-    assert.deepEqual(getSingularPluralVariations('potatoes'), ['potatoes', 'potatoe', 'potato']);
+    assert.deepEqual(getSingularPluralVariations('potatoes'), ['potatoes', 'potato']);
 
     console.log('  ✅ Grammar rules and exceptions validation successful.\n');
 

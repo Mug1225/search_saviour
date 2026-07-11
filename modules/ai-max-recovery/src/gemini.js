@@ -104,7 +104,16 @@ async function classifySearchTerms(fallbackCandidates, businessContext, campaign
       // Initialize modern Google GenAI Client
       const ai = new GoogleGenAI({ apiKey });
 
-      const promptText = `
+      const BATCH_SIZE = 25;
+      const batches = [];
+      for (let i = 0; i < uncachedCandidates.length; i += BATCH_SIZE) {
+        batches.push(uncachedCandidates.slice(i, i + BATCH_SIZE));
+      }
+
+      const allParsedClassifications = [];
+
+      for (const batch of batches) {
+        const promptText = `
 You are SearchSavior's expert AI Ads Auditor. You are analyzing Google Ads search query leakage.
 Your task is to classify zero-conversion, wasted-spend search terms based on the business context below.
 
@@ -132,53 +141,54 @@ Strict Guidelines for Output Fields:
 - language softening: For services not explicitly mentioned in the business profile, never claim as fact that the business "does not offer" them. Soften your reason: "Zero conversions suggest orthodontics is not a service you offer. Confirm before blocking." or similar.
 
 Here are the search terms to classify:
-${JSON.stringify(uncachedCandidates.map(t => ({ search_term: t.search_term, campaign: t.campaign, cost: t.cost })))}
+${JSON.stringify(batch.map(t => ({ search_term: t.search_term, campaign: t.campaign, cost: t.cost })))}
 
 Provide your response strictly in the requested JSON format.
 `;
 
-      // Force structured JSON output matching output_schema guidelines
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: promptText,
-        config: {
-          temperature: 0.0,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'OBJECT',
-            properties: {
-              classifications: {
-                type: 'ARRAY',
-                items: {
-                  type: 'OBJECT',
-                  properties: {
-                    searchTerm: { type: 'STRING' },
-                    category: { 
-                      type: 'STRING', 
-                      enum: ['brand-competitor', 'tangential-vertical', 'other'] 
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: promptText,
+          config: {
+            temperature: 0.0,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                classifications: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: {
+                      searchTerm: { type: 'STRING' },
+                      category: { 
+                        type: 'STRING', 
+                        enum: ['brand-competitor', 'tangential-vertical', 'other'] 
+                      },
+                      recommendedNegative: { type: 'STRING' },
+                      matchType: { 
+                        type: 'STRING', 
+                        enum: ['EXACT', 'PHRASE', 'BROAD'] 
+                      },
+                      reason: { type: 'STRING' },
+                      confidence: { type: 'NUMBER' }
                     },
-                    recommendedNegative: { type: 'STRING' },
-                    matchType: { 
-                      type: 'STRING', 
-                      enum: ['EXACT', 'PHRASE', 'BROAD'] 
-                    },
-                    reason: { type: 'STRING' },
-                    confidence: { type: 'NUMBER' }
-                  },
-                  required: ['searchTerm', 'category', 'recommendedNegative', 'matchType', 'reason', 'confidence']
+                    required: ['searchTerm', 'category', 'recommendedNegative', 'matchType', 'reason', 'confidence']
+                  }
                 }
-              }
-            },
-            required: ['classifications']
+              },
+              required: ['classifications']
+            }
           }
-        }
-      });
+        });
 
-      const parsedResponse = JSON.parse(response.text);
-      const classifications = parsedResponse.classifications || [];
+        const parsedResponse = JSON.parse(response.text);
+        const chunkClassifications = parsedResponse.classifications || [];
+        allParsedClassifications.push(...chunkClassifications);
+      }
 
       // Map classifications back to SearchSavior recommended format
-      newRecommendations = classifications
+      newRecommendations = allParsedClassifications
         .filter(c => c.category !== 'other')
         .map(c => {
           const matchingTerm = uncachedCandidates.find(t => t.search_term.toLowerCase() === c.searchTerm.toLowerCase());
